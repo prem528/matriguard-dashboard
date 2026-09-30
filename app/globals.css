@@ -1,26 +1,255 @@
 @import "tailwindcss";
 
+/* ============================================================
+   Tokens
+   Semantic names, swapped wholesale for dark mode, so components
+   never carry their own dark: variants.
+
+   Shape rule: controls (buttons, inputs, chips) are rounded-md,
+   panels and dialogs are rounded-lg. Nothing is pill-shaped.
+   ============================================================ */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --canvas: #f5f6f9;
+  --surface: #fdfdfe;
+  --surface-muted: #eff1f5;
+  --line: #e1e5ed;
+  --line-strong: #c9d0dd;
+
+  --ink: #0b1220;
+  --ink-muted: #465068;
+  --ink-faint: #677089;
+
+  --primary: #0d1628;
+  --primary-hover: #1f2d4a;
+  --primary-ink: #fdfdfe;
+
+  /* Gold is the single accent: focus, active nav, the wordmark. */
+  --accent: #c59230;
+  --accent-ink: #7a5419;
+  --accent-soft: #f7eed5;
+
+  --rail: #080d1a;
+  --rail-line: #172036;
+  --rail-ink: #e6eaf2;
+  --rail-ink-muted: #8d97ad;
+  --rail-active: #141d31;
+
+  --ok: #1d6b45;
+  --ok-soft: #e3f3ea;
+  --warn: #8a5a00;
+  --warn-soft: #fbf0d6;
+  --danger: #b42318;
+  --danger-soft: #fdecea;
+
+  --shadow: 0 1px 2px rgb(13 22 40 / 0.06), 0 8px 24px -12px rgb(13 22 40 / 0.18);
+
+  color-scheme: light;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+/* The panel is always light. The dark palette is kept, but it applies only
+   when data-theme="dark" is set on <html>, never from the OS setting. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+:root[data-theme="dark"] {
+  & {
+    --canvas: #070b14;
+    --surface: #0c1220;
+    --surface-muted: #121a2b;
+    --line: #1c253a;
+    --line-strong: #2a3651;
+
+    --ink: #e7ebf3;
+    --ink-muted: #a4aec3;
+    --ink-faint: #8089a0;
+
+    --primary: #d5aa44;
+    --primary-hover: #e2c672;
+    --primary-ink: #080d1a;
+
+    --accent: #d5aa44;
+    --accent-ink: #e2c672;
+    --accent-soft: #2a2211;
+
+    --rail: #05080f;
+    --rail-line: #141c2e;
+    --rail-ink: #e6eaf2;
+    --rail-ink-muted: #8089a0;
+    --rail-active: #111a2c;
+
+    --ok: #6fcf9b;
+    --ok-soft: #0f2a1d;
+    --warn: #eac36b;
+    --warn-soft: #2d2410;
+    --danger: #f28b82;
+    --danger-soft: #3a1512;
+
+    --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 8px 24px -12px rgb(0 0 0 / 0.6);
+
+    color-scheme: dark;
   }
 }
 
+@theme inline {
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --font-serif: var(--font-playfair), Georgia, serif;
+
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-faint: var(--ink-faint);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-ink: var(--primary-ink);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-accent-soft: var(--accent-soft);
+  --color-rail: var(--rail);
+  --color-rail-line: var(--rail-line);
+  --color-rail-ink: var(--rail-ink);
+  --color-rail-ink-muted: var(--rail-ink-muted);
+  --color-rail-active: var(--rail-active);
+  --color-ok: var(--ok);
+  --color-ok-soft: var(--ok-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+
+  --shadow-panel: var(--shadow);
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--canvas);
+  color: var(--ink);
+}
+
+::selection {
+  background: var(--accent);
+  color: #080d1a;
+}
+
+/* One focus ring for every control, so keyboard users never lose their
+   place between the rail, the toolbar and the form. */
+:where(a, button, input, textarea, select, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ============================================================
+   Article body
+   Mirrors the public blog's reading column, so what the editor
+   shows is what the site will print.
+   ============================================================ */
+
+.article-body {
+  font-size: 1.0625rem;
+  line-height: 1.85;
+  color: var(--ink);
+}
+
+.article-body > * + * {
+  margin-top: 1.1em;
+}
+
+.article-body h2,
+.article-body h3 {
+  font-family: var(--font-serif);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+  color: var(--ink);
+}
+
+.article-body h2 {
+  font-size: 1.6rem;
+  margin-top: 1.8em;
+}
+
+.article-body h3 {
+  font-size: 1.25rem;
+  margin-top: 1.5em;
+}
+
+.article-body a {
+  color: var(--accent-ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.article-body ul,
+.article-body ol {
+  padding-left: 1.4em;
+}
+
+.article-body ul {
+  list-style: disc;
+}
+
+.article-body ol {
+  list-style: decimal;
+}
+
+.article-body li + li {
+  margin-top: 0.35em;
+}
+
+.article-body li::marker {
+  color: var(--accent);
+}
+
+.article-body blockquote {
+  border-left: 2px solid var(--accent);
+  padding-left: 1.1em;
+  font-family: var(--font-serif);
+  font-size: 1.2rem;
+  font-style: italic;
+  line-height: 1.6;
+  color: var(--ink-muted);
+}
+
+.article-body hr {
+  border: 0;
+  border-top: 1px solid var(--line-strong);
+  margin: 2.2em auto;
+  width: 30%;
+}
+
+.article-body img {
+  width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+}
+
+.article-body img.ProseMirror-selectednode {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+/* Tiptap placeholder on the empty first paragraph. */
+.article-body p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+  color: var(--ink-faint);
+}
+
+.ProseMirror {
+  outline: none;
+  min-height: 24rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
 }
