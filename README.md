@@ -1,10 +1,25 @@
 # MatriGuard Dashboard
 
 Admin panel for the MatriGuard website's blog. One admin signs in, writes and
-publishes posts; the website reads published posts from this app's API.
+publishes posts; the website reads published posts from this app's public API.
 
-Runs as its own process, separate from the website, so a crash or redeploy
-here never takes the public site down.
+Runs as its own Hostinger Node.js Web App, separate from the website, so a
+crash or redeploy here never takes the public site down.
+
+## Data
+
+Everything lives in MySQL: posts in `posts`, uploaded images in `media`
+(a Node.js Web App's folder can be replaced on redeploy, so nothing is kept
+on disk). One phpMyAdmin export backs up the whole blog.
+
+## First-time database setup (phpMyAdmin)
+
+1. hPanel > Databases > phpMyAdmin > open `u319046606_matriguard_db`.
+2. SQL tab: paste `db/schema.sql`, press Go.
+3. SQL tab: paste `db/seed.sql`, press Go. (The ten existing articles;
+   their bodies are only the excerpt and need writing in the editor.)
+
+Both files are safe to run twice.
 
 ## Local setup
 
@@ -15,32 +30,23 @@ node scripts/hash-password.mjs "a-long-password"   # paste both lines into .env.
 npm run dev -- -p 3001
 ```
 
-Open http://localhost:3001 and sign in with `ADMIN_EMAIL` and that password.
+The Hostinger database only accepts connections from the server. To use it
+from your computer, add your IP under hPanel > Databases > Remote MySQL and
+set `DB_HOST` to the hostname shown there; or point `DB_*` at a local MySQL.
 
-On first run the ten articles the website already listed are seeded into
-`data/posts.json`. Their bodies are only the excerpt; write the full text in
-the editor.
+## Public API (read by the website)
 
-## Where content lives
+| Request | Returns |
+| --- | --- |
+| `GET /api/public/posts` | `{ posts: [...] }` live posts, newest first, no bodies |
+| `GET /api/public/posts/<slug>` | `{ post: {...} }` with `contentHtml`, or 404 |
+| `GET /uploads/<name>` | an uploaded image |
 
-| What        | Where                          |
-| ----------- | ------------------------------ |
-| Posts       | `$DATA_DIR/posts.json`         |
-| Images      | `$DATA_DIR/uploads/`           |
+Only posts that are published and dated today or earlier (India time) are
+returned. Responses may be cached for 60 seconds.
 
-`DATA_DIR` defaults to `./data` (gitignored). In production point it outside
-the app folder, e.g. `/var/lib/matriguard-dashboard`, and include it in backups.
+## Production (Hostinger Node.js Web App)
 
-## Production
-
-```bash
-npm ci && npm run build
-pm2 start npm --name matriguard-dashboard -- start -- -p 3001
-```
-
-Put it behind nginx on its own subdomain (e.g. `admin.matriguardsolutions.com`)
-with HTTPS; the session cookie is `Secure` in production. Pass the client IP
-through with `proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;` so
-the login throttle counts per visitor.
-
-Rotating `SESSION_SECRET` signs every session out.
+- Build command `npm run build`, start command `npm start`.
+- Environment variables: everything in `.env.example`, with `DB_HOST=127.0.0.1`.
+- Rotating `SESSION_SECRET` signs every session out.

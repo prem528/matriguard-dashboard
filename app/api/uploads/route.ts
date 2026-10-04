@@ -1,8 +1,14 @@
 import { randomBytes } from "node:crypto";
-import { mkdir, writeFile } from "node:fs/promises";
-import path from "node:path";
 import { getSession } from "@/lib/auth/session";
-import { UPLOADS_DIR } from "@/lib/storage";
+import { isPacketTooLarge } from "@/lib/db";
+import { saveMedia } from "@/lib/media-store";
+
+const MIME: Record<string, string> = {
+  jpg: "image/jpeg",
+  png: "image/png",
+  webp: "image/webp",
+  avif: "image/avif",
+};
 
 const MAX_BYTES = 5 * 1024 * 1024;
 
@@ -43,8 +49,19 @@ export async function POST(request: Request) {
 
   // Unguessable and never reused, so the website can cache it forever.
   const name = `${Date.now().toString(36)}-${randomBytes(6).toString("hex")}.${extension}`;
-  await mkdir(UPLOADS_DIR, { recursive: true });
-  await writeFile(path.join(UPLOADS_DIR, name), bytes);
+  try {
+    await saveMedia(name, MIME[extension], bytes);
+  } catch (error) {
+    // The database server's max_allowed_packet can be smaller than our 5 MB cap.
+    if (isPacketTooLarge(error)) {
+      return Response.json(
+        { error: "That image is too large for the database. Try one under 1 MB." },
+        { status: 413 }
+      );
+    }
+    console.error("Upload: could not store image.", error);
+    return Response.json({ error: "The image could not be saved. Try again in a moment." }, { status: 500 });
+  }
 
   return Response.json({ url: `/uploads/${name}` }, { status: 201 });
 }

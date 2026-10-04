@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/auth/session";
+import { isDuplicateKey } from "@/lib/db";
 import { COVER_POSITIONS, LIMITS, countWords, slugify } from "./format";
 import { sanitizePostHtml } from "./sanitize";
 import * as store from "./store";
@@ -66,7 +67,25 @@ export async function savePost(id: string | null, raw: PostInput): Promise<SaveR
     };
   }
 
-  const post = await store.savePost(id, input);
+  let post;
+  try {
+    post = await store.savePost(id, input);
+  } catch (error) {
+    // Another save claimed the address between the check above and now.
+    if (isDuplicateKey(error)) {
+      return {
+        ok: false,
+        message: "Check the highlighted fields.",
+        fieldErrors: { slug: "Another post already uses this web address." },
+      };
+    }
+    console.error("Save post: database error.", error);
+    return {
+      ok: false,
+      message: "The post could not be saved. Your text is still here; try again in a moment.",
+      fieldErrors: {},
+    };
+  }
   if (!post) {
     return { ok: false, message: "This post was deleted in another tab.", fieldErrors: {} };
   }

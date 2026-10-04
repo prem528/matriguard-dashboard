@@ -11,7 +11,7 @@ import { ImageSquare } from "@phosphor-icons/react";
 export default function CoverThumb({
   src,
   position,
-  className = "h-11 w-16",
+  className = "h-11 w-16 rounded-md",
 }: {
   src: string | null;
   position: string;
@@ -22,7 +22,7 @@ export default function CoverThumb({
   if (!src || failed) {
     return (
       <span
-        className={`${className} flex shrink-0 items-center justify-center rounded-md bg-surface-muted text-ink-faint`}
+        className={`${className} flex shrink-0 items-center justify-center bg-surface-muted text-ink-faint`}
       >
         <ImageSquare size={18} />
       </span>
@@ -36,7 +36,7 @@ export default function CoverThumb({
       alt=""
       loading="lazy"
       onError={() => setFailed(true)}
-      className={`${className} shrink-0 rounded-md bg-surface-muted object-cover`}
+      className={`${className} shrink-0 bg-surface-muted object-cover`}
       style={{ objectPosition: position }}
     />
   );

@@ -1,32 +1,31 @@
-import { readFile } from "node:fs/promises";
-import path from "node:path";
-import { UPLOADS_DIR } from "@/lib/storage";
+import { getMedia } from "@/lib/media-store";
 
-const TYPES: Record<string, string> = {
-  jpg: "image/jpeg",
-  png: "image/png",
-  webp: "image/webp",
-  avif: "image/avif",
-};
-
-/** Exactly the names the upload route generates, so no path can escape. */
+/** Exactly the names the upload route generates. */
 const NAME = /^[a-z0-9]+-[a-f0-9]{12}\.(jpg|png|webp|avif)$/;
 
+/**
+ * Serves an uploaded image from the database. Names are random and never
+ * reused, so browsers and the website may cache them for a year.
+ */
 export async function GET(_request: Request, { params }: RouteContext<"/uploads/[file]">) {
   const { file } = await params;
-  const match = NAME.exec(file);
-  if (!match) return new Response("Not found", { status: 404 });
+  if (!NAME.test(file)) return new Response("Not found", { status: 404 });
 
+  let media;
   try {
-    const body = await readFile(path.join(UPLOADS_DIR, file));
-    return new Response(body, {
-      headers: {
-        "Content-Type": TYPES[match[1]],
-        "Cache-Control": "public, max-age=31536000, immutable",
-        "X-Content-Type-Options": "nosniff",
-      },
-    });
-  } catch {
-    return new Response("Not found", { status: 404 });
+    media = await getMedia(file);
+  } catch (error) {
+    console.error("Uploads: database unavailable.", error);
+    return new Response("Temporarily unavailable", { status: 503, headers: { "Retry-After": "30" } });
   }
+  if (!media) return new Response("Not found", { status: 404 });
+
+  return new Response(new Uint8Array(media.bytes), {
+    headers: {
+      "Content-Type": media.mime,
+      "Content-Length": String(media.bytes.byteLength),
+      "Cache-Control": "public, max-age=31536000, immutable",
+      "X-Content-Type-Options": "nosniff",
+    },
+  });
 }

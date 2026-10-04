@@ -28,6 +28,9 @@ export interface Post {
   updatedAt: string;
 }
 
+/** A post without its body: what lists and the public index carry. */
+export type PostSummary = Omit<Post, "contentHtml">;
+
 /** Everything the editor sends; the server derives the rest. */
 export interface PostInput {
   title: string;

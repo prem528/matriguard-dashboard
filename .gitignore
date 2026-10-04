@@ -41,5 +41,3 @@ yarn-error.log*
 next-env.d.ts
 !.env.example
 
-# content: posts.json and uploads live on the server, backed up separately
-/data

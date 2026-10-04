@@ -112,9 +112,9 @@ export default async function PostsPage({ searchParams }: PageProps<"/posts">) {
         </form>
       </div>
 
-      <section className={`${panel} mt-4 overflow-hidden`}>
+      <section className="mt-5">
         {posts.length === 0 ? (
-          <div className="px-6 py-16 text-center">
+          <div className={`${panel} px-6 py-16 text-center`}>
             {query ? (
               <>
                 <p className="text-sm font-medium text-ink">Nothing matches &ldquo;{query}&rdquo;</p>
@@ -138,68 +138,68 @@ export default async function PostsPage({ searchParams }: PageProps<"/posts">) {
             )}
           </div>
         ) : (
-          <table className="w-full text-left text-sm">
-            <thead className="border-b border-line bg-surface-muted/60 text-xs text-ink-muted">
-              <tr>
-                <th scope="col" className="px-6 py-3 font-medium">Post</th>
-                <th scope="col" className="hidden px-4 py-3 font-medium md:table-cell">Category</th>
-                <th scope="col" className="px-4 py-3 font-medium">Status</th>
-                <th scope="col" className="hidden px-4 py-3 font-medium lg:table-cell">Date</th>
-                <th scope="col" className="hidden px-4 py-3 font-medium xl:table-cell">Edited</th>
-                <th scope="col" className="w-12 px-4 py-3">
-                  <span className="sr-only">Open on website</span>
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-line">
-              {posts.map((post) => {
-                const postStateNow = postState(post, today);
-                return (
-                  <tr key={post.id} className="group transition-colors hover:bg-surface-muted/60">
-                    <td className="px-6 py-3.5">
-                      <Link href={`/posts/${post.id}`} className="flex items-center gap-4">
-                        <CoverThumb src={mediaSrc(post.coverImage, site)} position={post.coverPosition} />
-                        <span className="min-w-0">
-                          <span className="line-clamp-2 font-medium text-ink group-hover:text-accent-ink">
-                            {post.title || "Untitled draft"}
-                          </span>
-                          <span className="mt-0.5 block truncate font-mono text-xs text-ink-faint">
-                            /blog/{post.slug}
-                          </span>
+          <ul className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
+            {posts.map((post) => {
+              const postStateNow = postState(post, today);
+              return (
+                <li key={post.id}>
+                  {/* The title link is stretched over the whole card, so the
+                      card opens the editor while the website link inside it
+                      stays a separate, valid link. */}
+                  <article className="group relative flex h-full flex-col overflow-hidden rounded-lg border border-line bg-surface transition-[border-color,box-shadow] duration-200 focus-within:border-accent hover:border-line-strong hover:shadow-panel">
+                    <CoverThumb
+                      src={mediaSrc(post.coverImage, site)}
+                      position={post.coverPosition}
+                      className="aspect-16/10 w-full rounded-none"
+                    />
+
+                    <div className="flex flex-1 flex-col p-5">
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="truncate text-xs font-medium text-accent-ink">
+                          {post.category || <span className="text-ink-faint">No category</span>}
                         </span>
-                      </Link>
-                    </td>
-                    <td className="hidden px-4 py-3.5 text-ink-muted md:table-cell">
-                      {post.category || <span className="text-ink-faint">None</span>}
-                    </td>
-                    <td className="px-4 py-3.5">
-                      <StateBadge state={postStateNow} />
-                    </td>
-                    <td className="hidden px-4 py-3.5 whitespace-nowrap text-ink-muted lg:table-cell">
-                      {formatDate(post.publishedAt)}
-                    </td>
-                    <td className="hidden px-4 py-3.5 whitespace-nowrap text-ink-faint xl:table-cell">
-                      {formatRelative(post.updatedAt)}
-                    </td>
-                    <td className="px-4 py-3.5 text-right">
-                      {postStateNow === "published" && site ? (
-                        <a
-                          href={`${site}/blog/${post.slug}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex rounded-md p-1.5 text-ink-faint transition-colors hover:bg-surface hover:text-ink"
-                          aria-label={`Open “${post.title}” on the website`}
-                          title="Open on the website"
+                        <StateBadge state={postStateNow} />
+                      </div>
+
+                      <h2 className="mt-3 font-serif text-lg leading-snug font-bold text-ink">
+                        <Link
+                          href={`/posts/${post.id}`}
+                          className="line-clamp-2 after:absolute after:inset-0 focus-visible:outline-none group-hover:text-accent-ink"
                         >
-                          <ArrowSquareOut size={17} />
-                        </a>
-                      ) : null}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                          {post.title || "Untitled draft"}
+                        </Link>
+                      </h2>
+
+                      {/* mb-5 sets the floor, mt-auto on the footer takes the
+                          rest, so footers line up across a row. */}
+                      <p className="mt-2 mb-5 line-clamp-2 text-sm leading-6 text-ink-muted">
+                        {post.excerpt || <span className="text-ink-faint">No summary yet.</span>}
+                      </p>
+
+                      <div className="mt-auto flex items-center justify-between gap-3 border-t border-line pt-4 text-xs">
+                        <span className="min-w-0 truncate text-ink-muted">
+                          {formatDate(post.publishedAt)}
+                          <span className="text-ink-faint"> · edited {formatRelative(post.updatedAt)}</span>
+                        </span>
+                        {postStateNow === "published" && site && (
+                          <a
+                            href={`${site}/blog/${post.slug}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="relative z-10 -my-1.5 -mr-1.5 inline-flex shrink-0 rounded-md p-1.5 text-ink-faint transition-colors hover:bg-surface-muted hover:text-ink"
+                            aria-label={`Open “${post.title}” on the website`}
+                            title="Open on the website"
+                          >
+                            <ArrowSquareOut size={17} />
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  </article>
+                </li>
+              );
+            })}
+          </ul>
         )}
       </section>
     </div>
