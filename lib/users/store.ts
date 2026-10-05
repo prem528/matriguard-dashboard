@@ -95,7 +95,7 @@ export async function createUser(input: {
 export async function updateUser(id: string, input: { name?: string; role?: UserRole }) {
   const now = toSqlTime(new Date().toISOString());
   const sets: string[] = ["updated_at = ?"];
-  const params: unknown[] = [now];
+  const params: string[] = [now];
 
   if (input.name !== undefined) {
     sets.push("name = ?");
