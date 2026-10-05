@@ -1,6 +1,8 @@
 import "server-only";
 
 import mysql, { type Pool } from "mysql2/promise";
+import { ensureBootstrapUser } from "@/lib/db/ensure-bootstrap-user";
+import { ensureSchema } from "@/lib/db/ensure-schema";
 
 /**
  * One MySQL pool per server process.
@@ -9,7 +11,10 @@ import mysql, { type Pool } from "mysql2/promise";
  * a fresh set of connections on every edit; shared hosting caps how many
  * connections one database user may hold.
  */
-const globalForDb = globalThis as typeof globalThis & { __matriguardPool?: Pool };
+const globalForDb = globalThis as typeof globalThis & {
+  __matriguardPool?: Pool;
+  __matriguardSchemaReady?: Promise<void>;
+};
 
 export function db() {
   if (!globalForDb.__matriguardPool) {
@@ -37,6 +42,19 @@ export function db() {
     });
   }
   return globalForDb.__matriguardPool;
+}
+
+/** Ensures required tables exist, then returns the shared pool. */
+export async function ready() {
+  const pool = db();
+  if (!globalForDb.__matriguardSchemaReady) {
+    globalForDb.__matriguardSchemaReady = (async () => {
+      await ensureSchema(pool);
+      await ensureBootstrapUser(pool);
+    })();
+  }
+  await globalForDb.__matriguardSchemaReady;
+  return pool;
 }
 
 /** DATETIME(3) text ("2026-09-30 10:15:00.000", UTC) to ISO 8601. */

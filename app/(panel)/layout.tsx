@@ -7,7 +7,7 @@ export default async function PanelLayout({ children }: LayoutProps<"/">) {
 
   return (
     <div className="min-h-dvh">
-      <Rail name={adminName(session.sub)} email={session.sub} siteUrl={siteUrl()} />
+      <Rail name={adminName(session.user)} email={session.user.email} siteUrl={siteUrl()} />
       <main className="lg:pl-64">{children}</main>
     </div>
   );

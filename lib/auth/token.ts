@@ -53,8 +53,7 @@ export function verifyToken(token: string | undefined): SessionPayload | null {
   try {
     const payload = JSON.parse(Buffer.from(body, "base64url").toString()) as SessionPayload;
     if (typeof payload.exp !== "number" || payload.exp * 1000 < Date.now()) return null;
-    // A token for an address that is no longer the admin is worthless.
-    if (payload.sub !== process.env.ADMIN_EMAIL?.trim().toLowerCase()) return null;
+    if (typeof payload.sub !== "string" || !payload.sub.includes("@")) return null;
     return payload;
   } catch {
     return null;

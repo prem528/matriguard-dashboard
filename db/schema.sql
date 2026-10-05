@@ -1,4 +1,5 @@
 -- MatriGuard dashboard: tables.
+-- Panel sign-in uses `users`; the first row is seeded from .env on startup.
 --
 -- Run once in phpMyAdmin: select the database, open the SQL tab, paste
 -- this file, press Go. Safe to run again; existing tables are left alone.
@@ -33,6 +34,18 @@ CREATE TABLE IF NOT EXISTS posts (
 -- Uploaded images. Kept in the database because a Node.js Web App's folder
 -- can be replaced on redeploy. 16 MB per image at most; uploads are capped
 -- at 5 MB by the app.
+CREATE TABLE IF NOT EXISTS users (
+  id             CHAR(36)     NOT NULL,
+  email          VARCHAR(255) NOT NULL,
+  name           VARCHAR(80)  NOT NULL DEFAULT '',
+  password_hash  VARCHAR(160) NOT NULL,
+  role           ENUM('admin', 'editor') NOT NULL DEFAULT 'admin',
+  created_at     DATETIME(3)  NOT NULL,
+  updated_at     DATETIME(3)  NOT NULL,
+  PRIMARY KEY (id),
+  UNIQUE KEY users_email (email)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS media (
   name        VARCHAR(64)  NOT NULL,
   mime        VARCHAR(32)  NOT NULL,

@@ -2,7 +2,7 @@ import "server-only";
 
 import { randomUUID } from "node:crypto";
 import type { ResultSetHeader, RowDataPacket } from "mysql2/promise";
-import { db, fromSqlTime, toSqlTime } from "@/lib/db";
+import { ready, fromSqlTime, toSqlTime } from "@/lib/db";
 import { readingMinutes, todayIst } from "./format";
 import type { Post, PostInput, PostState, PostSummary } from "./types";
 
@@ -89,7 +89,7 @@ export async function listPosts(filter?: { state?: PostState; query?: string }) 
     params.push(likeContains(query), likeContains(query), likeContains(query));
   }
 
-  const [rows] = await db().query<PostRow[]>(
+  const [rows] = await (await ready()).query<PostRow[]>(
     `SELECT ${SUMMARY_COLUMNS} FROM posts ${where.length ? `WHERE ${where.join(" AND ")}` : ""} ${NEWEST_FIRST}`,
     params
   );
@@ -97,12 +97,12 @@ export async function listPosts(filter?: { state?: PostState; query?: string }) 
 }
 
 export async function getPost(id: string) {
-  const [rows] = await db().query<PostRow[]>(`SELECT ${ALL_COLUMNS} FROM posts WHERE id = ?`, [id]);
+  const [rows] = await (await ready()).query<PostRow[]>(`SELECT ${ALL_COLUMNS} FROM posts WHERE id = ?`, [id]);
   return rows[0] ? toPost(rows[0]) : null;
 }
 
 export async function slugTaken(slug: string, exceptId?: string) {
-  const [rows] = await db().query<RowDataPacket[]>(
+  const [rows] = await (await ready()).query<RowDataPacket[]>(
     "SELECT 1 FROM posts WHERE slug = ? AND id <> ? LIMIT 1",
     [slug, exceptId ?? ""]
   );
@@ -110,7 +110,7 @@ export async function slugTaken(slug: string, exceptId?: string) {
 }
 
 export async function listCategories() {
-  const [rows] = await db().query<RowDataPacket[]>(
+  const [rows] = await (await ready()).query<RowDataPacket[]>(
     "SELECT DISTINCT category FROM posts WHERE category <> '' ORDER BY category"
   );
   return rows.map((row) => row.category as string);
@@ -118,7 +118,7 @@ export async function listCategories() {
 
 export async function postCounts() {
   const today = todayIst();
-  const [rows] = await db().query<RowDataPacket[]>(
+  const [rows] = await (await ready()).query<RowDataPacket[]>(
     `SELECT COUNT(*) AS total,
        SUM(status = 'draft') AS draft,
        SUM(status = 'published' AND published_at > ?) AS scheduled,
@@ -161,7 +161,7 @@ export async function savePost(id: string | null, input: PostInput): Promise<Pos
 
   if (id === null) {
     const newId = randomUUID();
-    await db().execute(
+    await (await ready()).execute(
       `INSERT INTO posts (slug, title, excerpt, category, cover_image, cover_alt, cover_position,
          content_html, meta_description, status, published_at, reading_minutes, updated_at, id, created_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -170,7 +170,7 @@ export async function savePost(id: string | null, input: PostInput): Promise<Pos
     return { ...input, id: newId, readingMinutes: minutes, createdAt: now, updatedAt: now };
   }
 
-  const [result] = await db().execute<ResultSetHeader>(
+  const [result] = await (await ready()).execute<ResultSetHeader>(
     `UPDATE posts SET slug = ?, title = ?, excerpt = ?, category = ?, cover_image = ?, cover_alt = ?,
        cover_position = ?, content_html = ?, meta_description = ?, status = ?, published_at = ?,
        reading_minutes = ?, updated_at = ?
@@ -181,7 +181,7 @@ export async function savePost(id: string | null, input: PostInput): Promise<Pos
 }
 
 export async function deletePost(id: string) {
-  const [result] = await db().execute<ResultSetHeader>("DELETE FROM posts WHERE id = ?", [id]);
+  const [result] = await (await ready()).execute<ResultSetHeader>("DELETE FROM posts WHERE id = ?", [id]);
   return result.affectedRows > 0;
 }
 
@@ -191,7 +191,7 @@ export async function deletePost(id: string) {
    ---------------------------------------------------------------- */
 
 export async function listPublished() {
-  const [rows] = await db().query<PostRow[]>(
+  const [rows] = await (await ready()).query<PostRow[]>(
     `SELECT ${SUMMARY_COLUMNS} FROM posts WHERE status = 'published' AND published_at <= ? ${NEWEST_FIRST}`,
     [todayIst()]
   );
@@ -199,7 +199,7 @@ export async function listPublished() {
 }
 
 export async function getPublishedBySlug(slug: string) {
-  const [rows] = await db().query<PostRow[]>(
+  const [rows] = await (await ready()).query<PostRow[]>(
     `SELECT ${ALL_COLUMNS} FROM posts WHERE slug = ? AND status = 'published' AND published_at <= ?`,
     [slug, todayIst()]
   );

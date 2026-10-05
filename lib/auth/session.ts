@@ -3,12 +3,19 @@ import "server-only";
 import { cache } from "react";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { getUserByEmail } from "@/lib/users/store";
+import type { User } from "@/lib/users/store";
 import {
   SESSION_COOKIE,
   SESSION_TTL_SECONDS,
   createToken,
   verifyToken,
 } from "./token";
+
+export interface AdminSession {
+  email: string;
+  user: User;
+}
 
 export async function createSession(email: string) {
   const store = await cookies();
@@ -36,13 +43,17 @@ export const getSession = cache(async () => {
  * Gate for every page and Server Action that reads or changes content.
  * proxy.ts only redirects optimistically; this is the real check.
  */
-export async function requireAdmin() {
+export async function requireAdmin(): Promise<AdminSession> {
   const session = await getSession();
   if (!session) redirect("/login");
-  return session;
+
+  const user = await getUserByEmail(session.sub);
+  if (!user) redirect("/login");
+
+  return { email: session.sub, user };
 }
 
-/** How the panel greets the admin. Falls back to the part before the @. */
-export function adminName(email: string) {
-  return process.env.ADMIN_NAME?.trim() || email.split("@")[0];
+/** How the panel greets the signed-in user. */
+export function adminName(user: Pick<User, "name" | "email">) {
+  return user.name.trim() || user.email.split("@")[0];
 }

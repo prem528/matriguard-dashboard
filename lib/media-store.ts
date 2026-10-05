@@ -1,7 +1,7 @@
 import "server-only";
 
 import type { RowDataPacket } from "mysql2/promise";
-import { db, toSqlTime } from "@/lib/db";
+import { ready, toSqlTime } from "@/lib/db";
 
 /**
  * Uploaded images live in the `media` table. A Node.js Web App's folder can
@@ -10,7 +10,7 @@ import { db, toSqlTime } from "@/lib/db";
  */
 
 export async function saveMedia(name: string, mime: string, bytes: Uint8Array) {
-  await db().execute(
+  await (await ready()).execute(
     "INSERT INTO media (name, mime, size, bytes, created_at) VALUES (?, ?, ?, ?, ?)",
     [name, mime, bytes.byteLength, Buffer.from(bytes), toSqlTime(new Date().toISOString())]
   );
@@ -22,6 +22,6 @@ interface MediaRow extends RowDataPacket {
 }
 
 export async function getMedia(name: string) {
-  const [rows] = await db().query<MediaRow[]>("SELECT mime, bytes FROM media WHERE name = ?", [name]);
+  const [rows] = await (await ready()).query<MediaRow[]>("SELECT mime, bytes FROM media WHERE name = ?", [name]);
   return rows[0] ?? null;
 }

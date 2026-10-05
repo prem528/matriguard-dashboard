@@ -1,13 +1,10 @@
 import Image from "next/image";
-import { ArrowSquareOut } from "@phosphor-icons/react/ssr";
-import { siteUrl } from "@/lib/media";
 import LoginForm from "./LoginForm";
 
 export const metadata = { title: "Sign in" };
 
 export default async function LoginPage({ searchParams }: PageProps<"/login">) {
   const { next } = await searchParams;
-  const site = siteUrl();
 
   return (
     <div className="flex min-h-dvh flex-col bg-canvas lg:grid lg:grid-cols-[minmax(0,1.18fr)_minmax(0,1fr)]">

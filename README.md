@@ -8,9 +8,11 @@ crash or redeploy here never takes the public site down.
 
 ## Data
 
-Everything lives in MySQL: posts in `posts`, uploaded images in `media`
-(a Node.js Web App's folder can be replaced on redeploy, so nothing is kept
-on disk). One phpMyAdmin export backs up the whole blog.
+Everything lives in MySQL: panel sign-in in `users`, posts in `posts`,
+uploaded images in `media` (a Node.js Web App's folder can be replaced on
+redeploy, so nothing is kept on disk). One phpMyAdmin export backs up the
+whole blog. Required tables are created automatically on startup; the first
+admin is seeded from `ADMIN_*` in `.env` when `users` is empty.
 
 ## First-time database setup (phpMyAdmin)
 
@@ -26,7 +28,9 @@ Both files are safe to run twice.
 ```bash
 npm install
 cp .env.example .env.local
-node scripts/hash-password.mjs "a-long-password"   # paste both lines into .env.local
+# Set ADMIN_EMAIL, ADMIN_PASSWORD (plain text string), ADMIN_NAME in .env.local
+node scripts/hash-password.mjs   # paste SESSION_SECRET into .env.local
+npm run seed:admin              # optional: immediately seed/update admin in users table
 npm run dev -- -p 3001
 ```
 

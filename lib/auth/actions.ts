@@ -5,6 +5,10 @@ import { redirect } from "next/navigation";
 import { verifyPassword } from "./password";
 import { clearFailures, lockedForMinutes, recordFailure } from "./rate-limit";
 import { createSession, destroySession } from "./session";
+import { getAuthUserByEmail } from "@/lib/users/store";
+
+/** Runs scrypt even when no account exists, so timing does not reveal which half failed. */
+const DUMMY_PASSWORD_HASH = `${Buffer.alloc(16).toString("base64url")}:${Buffer.alloc(64).toString("base64url")}`;
 
 export interface LoginState {
   error?: string;
@@ -28,10 +32,8 @@ export async function login(_prev: LoginState, formData: FormData): Promise<Logi
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const password = String(formData.get("password") ?? "");
 
-  const adminEmail = process.env.ADMIN_EMAIL?.trim().toLowerCase();
-  const adminHash = process.env.ADMIN_PASSWORD_HASH;
-  if (!adminEmail || !adminHash || !process.env.SESSION_SECRET) {
-    console.error("Login: ADMIN_EMAIL, ADMIN_PASSWORD_HASH or SESSION_SECRET is not set.");
+  if (!process.env.SESSION_SECRET) {
+    console.error("Login: SESSION_SECRET is not set.");
     return { email, error: "Sign-in is not configured on this server yet." };
   }
 
@@ -44,16 +46,15 @@ export async function login(_prev: LoginState, formData: FormData): Promise<Logi
     };
   }
 
-  // The hash runs even for a wrong email, so response time does not reveal
-  // which half of the pair was wrong.
-  const passwordOk = await verifyPassword(password, adminHash);
-  if (email !== adminEmail || !passwordOk) {
+  const account = email ? await getAuthUserByEmail(email) : null;
+  const passwordOk = await verifyPassword(password, account?.password_hash ?? DUMMY_PASSWORD_HASH);
+  if (!account || !passwordOk) {
     recordFailure(ip);
     return { email, error: "That email and password do not match." };
   }
 
   clearFailures(ip);
-  await createSession(adminEmail);
+  await createSession(account.email);
   redirect(safeNext(formData.get("next")));
 }
 

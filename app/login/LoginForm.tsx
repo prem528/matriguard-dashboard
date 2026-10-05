@@ -7,7 +7,6 @@ import {
   Eye,
   EyeSlash,
   LockSimple,
-  ShieldCheck,
   WarningCircle,
 } from "@phosphor-icons/react";
 import { login, type LoginState } from "@/lib/auth/actions";
