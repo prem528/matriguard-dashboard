@@ -19,10 +19,14 @@ function parseCreateStatements(sql: string) {
 
 /** Run db/schema.sql once per process; IF NOT EXISTS keeps it safe to repeat. */
 export async function ensureSchema(pool: Pool) {
-  const schemaPath = path.join(process.cwd(), "db", "schema.sql");
-  const sql = await readFile(schemaPath, "utf8");
+  try {
+    const schemaPath = path.join(process.cwd(), "db", "schema.sql");
+    const sql = await readFile(schemaPath, "utf8");
 
-  for (const statement of parseCreateStatements(sql)) {
-    await pool.execute(statement);
+    for (const statement of parseCreateStatements(sql)) {
+      await pool.execute(statement);
+    }
+  } catch (err) {
+    console.warn("ensureSchema skipped or table already exists:", err);
   }
 }
